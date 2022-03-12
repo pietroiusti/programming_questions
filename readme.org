@@ -1,0 +1,70 @@
+* itoa
+*Write a function that takes an (unsigned) int and returns it as a
+string.*
+
+We can isolate the rightmost digit of the number, transform it into a
+character, and put it into a string. And do this till we have
+exhausted the number. Finally we will have to reverse the string.
+
+How to isolate the rightmost digit? We can modulo ten 10.
+
+And then, how to get the other digits one by one? We can ``shift'' the
+number towards right using dividing it by 10.
+
+#+begin_src C
+  void itoa(uint32_t n, char s[])
+  {
+      uint32_t i = 0;    
+      do {
+          s[i] = n % 10 + '0';
+          i++;
+      }  while (n = n / 10);
+      s[i] = '\0';
+      reverse(s);
+  }
+#+end_src
+
+
+* Definitions
+** What is a hash table?
+A hash table is a data structure that groups a list of into
+``buckets''.
+
+Each bucket is identified by a code. That code (``hash'') is given by
+a function (``hash function''). The hash function takes an item and
+return its hash.
+*** Why using hash function?
+Hash functions allows you to quickly find an object.
+
+A good hash functions does not produces too many ``conflicts''. We
+don't want buckets holding too many objects. But, at the same time we
+don't want too many buckets either.
+
+*** How to implement a hash table?
+One way to implement a hash table is using an array of linked list,
+where the indices are the hashes and the linked lists are the buckets.
+
+Using linked-lists is known as /chaining scheme/. Other strategies are
+available.
+
+** What is a linked list?
+A linked list is a list of nodes. Each node holds some data and a
+pointer to the next node. The last node holds a null pointer.
+*** Example in JS
+Creating a three-node linked list and printing the value of the nodes:
+#+begin_src javascript
+  let node0 = {v: 0, n: null};
+  let node1 = {v: 1, n: node0};
+  let node2 = {v: 2, n: node1};
+
+  let n = node2;
+
+  while (n) {
+      console.log(`${n.v}`);
+      n = n.n;
+  }
+#+end_src
+
+** What is a tree?
+
+** What is a graph?

@@ -1,6 +1,5 @@
 * itoa
-*Write a function that takes an (unsigned) int and returns it as a
-string.*
+** Write a function that takes an (unsigned) int and returns it as string.
 
 We can isolate the rightmost digit of the number, transform it into a
 character, and put it into a string. And do this till we have
@@ -23,6 +22,245 @@ number towards right using dividing it by 10.
       reverse(s);
   }
 #+end_src
+** TODO Would you write differently if you had to represent the number in Hex?
+Yeah... We can use & and shift... 4 binary digits can be represented
+by one hexadecimal digits...
+
+* Two Sum (Leet Code) | Solution(s) in C
+The problem:
+#+begin_quote
+Given an array of integers nums and an integer target, return indices
+of the two numbers such that they add up to target.
+
+You may assume that each input would have exactly one solution, and
+you may not use the same element twice.
+
+You can return the answer in any order.
+
+Example 1:
+Input: nums = [2,7,11,15], target = 9
+Output: [0,1]
+Explanation: Because nums[0] + nums[1] == 9, we return [0, 1].
+
+Example 2:
+Input: nums = [3,2,4], target = 6
+Output: [1,2]
+
+Example 3:
+Input: nums = [3,3], target = 6
+Output: [0,1]
+
+Constraints:
+2 <= nums.length <= 10^4
+-10^9 <= nums[i] <= 10^9
+-10^9 <= target <= 10^9
+Only one valid answer exists.
+#+end_quote
+** Simple solution
+#+begin_src C
+  /**
+  * Note: The returned array must be malloced, assume caller calls free().
+  */
+  int* twoSum(int* nums, int numsSize, int target, int* returnSize){
+      int *arr = (int*)malloc(2 * sizeof(int));
+      *returnSize = 2;
+      for (int i = 0; i < numsSize; i++) {
+          for (int j = 0; j < numsSize; j++) {
+              if (i != j) {
+                  if (nums[i] + nums[j] == target) {
+                      arr[0] = i;
+                      printf("%i\n", i);
+                      arr[1] = j;
+                      printf("%i\n", j);
+                  }
+              }
+          }
+      }
+      return arr;
+  }
+#+end_src
+
+This works but we are iterating over the array of nums and, for each
+num, we are iterating again over the whole array of numbs. This means
+O(n^2). Not good.
+** Hash table
+We can avoid the second iteration. How?
+
+For each element x in the nums array we are asking this question: is
+there another element --- the ``complement'' --- y in the array such
+that target - x = y?
+
+Is there a way to answer that question without iterating over the
+whole array?  Not quite; but there is a way to answer that question by
+iterating over the array /only once/. How? We can use /one/ loop over
+the array to create a data structure made of key-value pairs that
+allows for quick lookup (that is, you have a key and you can quickly
+lookup its associated value). The best implementation of a such a data
+structure is a /hash table/. Once we have created a hash table we can
+answer the question immediately.
+
+Have a look at what a hash table is...[relevant links?]
+
+Probably the easiest way to implement a hash table is using an array
+of pointers to linked lists.  First let's decide the size of the
+array, declare the structure type for the nodes of the linked lists
+and create the hashtable.  Then we need a hash function (hash), a
+function for searching (lookup) and one for adding element to the hash
+table. Finally we can write our twoSum function.
+#+begin_src C
+  #define HASH_SIZE 101
+
+  typedef struct node {
+      int key;
+      int val;
+      struct node *next;
+  } node;
+
+
+  static node *hashtable[HASH_SIZE];
+  //https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
+  unsigned int hash(unsigned int x) {
+      x = ((x >> 16) ^ x) * 0x45d9f3b;
+      x = ((x >> 16) ^ x) * 0x45d9f3b;
+      x = (x >> 16) ^ x;
+      return x;
+  }
+
+  // Cf. K&R p. 144-5
+  node *lookup(int i) {
+      node *np;
+
+      for (np = hashtable[hash(i) % HASH_SIZE]; np != NULL; np = np->next)
+          if (np->key == i)
+              return np; /* FOUND */
+      return NULL;       /* NOT FOUND */
+  }
+
+  node *install(int i, int j) {
+      node *np = (node *)malloc(sizeof(*np));
+      if (np == NULL)
+          return NULL;
+
+      np->key = i;
+      np->val = j;
+
+      unsigned hashval = hash(i);
+
+      printf("Installing {key: %d, val: %d} at hashtable[%d]: %u\n", i, j, hashval); 
+
+      np->next = hashtable[hashval % HASH_SIZE];
+      hashtable[hashval % HASH_SIZE] = np;
+      return np;
+  }
+
+  int* twoSum(int* nums, int numsSize, int target, int* returnSize){
+      //memset(hashtable, 0, sizeof(hashtable)); // you need to do this in leetcode even if hashtable is a global variable (and therefore automatically initialized to 0)
+
+      for (int i = 0; i < numsSize; i++) {
+          install(nums[i], i);
+      }
+
+      node *np;
+      int complement;
+      for (int i = 0; i < numsSize; i++) {
+          complement = target - nums[i];
+          np = lookup(complement);
+          if (np != NULL) {
+              if (np->val != i) {
+                  printf("Complement found\n");
+                  *returnSize = 2;
+                  int *result = malloc(2 * sizeof(int));
+                  result[0] = i;
+                  result[1] = np->val;
+                  return result;
+              }            
+          }
+      }    
+      *returnSize = 0;
+      return NULL;
+  }
+#+end_src
+** Improving the hash table solution
+We don't need two loops. Have a look. The only thing that has been
+changed is twoSum.
+
+#+begin_src C
+  #define HASH_SIZE 101
+
+  typedef struct node {
+      int key;
+      int val;
+      struct node *next;
+  } node;
+
+  node *hashtable[HASH_SIZE];
+
+  // https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
+  unsigned int hash(unsigned int x) {
+      x = ((x >> 16) ^ x) * 0x45d9f3b;
+      x = ((x >> 16) ^ x) * 0x45d9f3b;
+      x = (x >> 16) ^ x;
+      return x;
+  }
+
+  // Cf. K&R p. 144-5
+  node *lookup(int i) {
+      node *np;
+
+      for (np = hashtable[hash(i) % HASH_SIZE]; np != NULL; np = np->next)
+          if (np->key == i)
+              return np; // FOUND
+      return NULL;       // NOT FOUND
+  }
+
+  node *install(int i, int j) {
+      node *np = (node *)malloc(sizeof(*np));
+      if (np == NULL)
+          return NULL;
+
+      np->key = i;
+      np->val = j;
+
+      unsigned hashval = hash(i);
+
+      //printf("Installing {key: %d, val: %d} at hashtable[%d]: %u\n", i, j, hashval); 
+
+      np->next = hashtable[hashval % HASH_SIZE];
+      hashtable[hashval % HASH_SIZE] = np;
+      return np;
+  }
+
+  int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
+      //memset(hashtable, 0, sizeof(hashtable)); // you need to do this in leetcode even if hashtable is a global variable (and therefore automatically initialized to 0)
+      //https://support.leetcode.com/hc/en-us/articles/360011834174-I-encountered-Wrong-Answer-Runtime-Error-for-a-specific-test-case-When-I-test-my-code-using-this-test-case-it-produced-the-correct-output-Why-
+
+      node *np;
+      int complement; 
+      for (int i = 0; i < numsSize; i++) {
+          complement = target - nums[i];
+          np = lookup(complement);
+          if (np != NULL) {
+              *returnSize = 2;
+              int *result = malloc(2 * sizeof(int));
+              result[0] = i;
+              result[1] = np->val;
+              return result;
+          }
+          install(nums[i], i);
+      }
+
+      *returnSize = 0;
+      return NULL;
+  }
+#+end_src
+** Improving more
+We can still improve:
+  - if we use a HASH_SIZE that is power of two then we can do &
+    instead of %.
+  - Instead of hardcoding the hash size we could make our program able
+    to change the number of buckets at runtime. We can still use the
+    same hash function.
+
 
 
 * Definitions

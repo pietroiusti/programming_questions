@@ -254,55 +254,199 @@ changed is twoSum.
   }
 #+end_src
 ** Improving more
-We can still improve:
-  - if we use a HASH_SIZE that is power of two then we can do &
-    instead of %.
-  - Instead of hardcoding the hash size we could make our program able
-    to change the number of buckets at runtime. We can still use the
-    same hash function.
+*** 
+We can still improve
 
-
-
-* Definitions
-** What is a hash table?
-A hash table is a data structure that groups a list of into
-``buckets''.
-
-Each bucket is identified by a code. That code (``hash'') is given by
-a function (``hash function''). The hash function takes an item and
-return its hash.
-*** Why using hash function?
-Hash functions allows you to quickly find an object.
-
-A good hash functions does not produces too many ``conflicts''. We
-don't want buckets holding too many objects. But, at the same time we
-don't want too many buckets either.
-
-*** How to implement a hash table?
-One way to implement a hash table is using an array of linked list,
-where the indices are the hashes and the linked lists are the buckets.
-
-Using linked-lists is known as /chaining scheme/. Other strategies are
-available.
-
-** What is a linked list?
-A linked list is a list of nodes. Each node holds some data and a
-pointer to the next node. The last node holds a null pointer.
-*** Example in JS
-Creating a three-node linked list and printing the value of the nodes:
-#+begin_src javascript
-  let node0 = {v: 0, n: null};
-  let node1 = {v: 1, n: node0};
-  let node2 = {v: 2, n: node1};
-
-  let n = node2;
-
-  while (n) {
-      console.log(`${n.v}`);
-      n = n.n;
-  }
+If we use a HASH_SIZE that is power of two then we can do & instead of
+%. So instead of
+#+begin_src C
+hashtable[hashval % HASH_SIZE]
+#+end_src
+we can do:
+#+begin_src C
+Hashtable[hashval & (HASH_SIZE -1) ]
 #+end_src
 
-** What is a tree?
+Moreover, instead of hardcoding the hash size we could make our
+program able to change the number of buckets at runtime. We can still
+use the same hash function.
 
-** What is a graph?
+#+begin_src C
+  struct hashtableType {
+    int count ;
+    int growthThreshold;
+    int numBuckets;
+    node *hashtable;
+  }
+#+end_src
+*** 
+A hash table should be able to resize itself at runtime. After a
+certain threshold, the linked lists become to long, so we want more
+our hash table to have more buckets.
+
+How? When we reach the threshold, we malloc more space for a new
+bigger hashtable. We go through the old hash table and we move each
+element in its new bucket in the new hash table. We free the space
+allocated for the old hash table and the rest is unchanged.
+
+#+begin_src C
+  #include <stdio.h>
+  #include <stdlib.h>
+
+  #define GROWTH 8
+
+  typedef struct node {
+      int key;
+      int val;
+      struct node *next;
+  } node;
+
+  void printHt(node **hashtable, int size);
+
+  struct hashtableType {
+      int count;
+      int growthThreshold;
+      int numsBuckets;
+      node **hashtable;
+  } ht;
+
+  void htInitialize() {
+      printf("Initializing\n");
+      ht.count = 0;
+      ht.numsBuckets = 64;
+      ht.growthThreshold = ht.numsBuckets * GROWTH;
+      ht.hashtable = malloc(ht.numsBuckets * sizeof(node *));
+      for (int i = 0; i < ht.numsBuckets; i++) {
+          ht.hashtable[i] = NULL;
+      }
+  }
+
+  // https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
+  unsigned int hash(unsigned int x) {
+      x = ((x >> 16) ^ x) * 0x45d9f3b;
+      x = ((x >> 16) ^ x) * 0x45d9f3b;
+      x = (x >> 16) ^ x;
+      return x;
+  }
+
+  node *lookup(int i) {
+      //printf("looking up\n");
+      node *np;
+    
+      for (np = ht.hashtable[hash(i)&(ht.numsBuckets-1)]; np != NULL; np = np->next) {
+          //printf("%i", j);
+          if (np->key == i)
+              return np; // FOUND
+      }
+      return NULL;       // NOT FOUND
+  }
+
+  node *install(int i, int j) {
+      ht.count += 1;
+      printf("count: %i\n", ht.count);
+      if (ht.count < ht.growthThreshold) {
+          ; //printf("Count lower than threshold\n");
+      } else { // we need to increase the size of the hash table        
+          printf("Gotta resize hashtable\n");
+
+          printf("HASH TABLE TO BE RESIZED: \n");
+          printHt(ht.hashtable, ht.numsBuckets);
+
+          node **newHashtable = malloc(2 *(ht.numsBuckets * sizeof(node *))); // alloc double space
+          int newNumsBuckets = ht.numsBuckets * 2;
+          for (int i = 0; i < newNumsBuckets; i++) // make the new memory allocated NULL
+              newHashtable[i] = NULL;
+
+          for (int i = 0; i < ht.numsBuckets; i++) { // install old elements in the new hash table  
+              if (ht.hashtable[i] != NULL) {
+                  node *current = ht.hashtable[i];		
+                  do {
+                      node *next = current->next;
+                      printf("re-hashing key %i (old hash %i, new hash: %i)\n",
+                             current->key, hash(current->key)&(ht.numsBuckets-1), hash(current->key)&(newNumsBuckets-1));
+                      current->next = newHashtable[hash(current->key)&(newNumsBuckets-1)];
+                      newHashtable[hash(current->key)&(newNumsBuckets-1)] = current;
+                      current = next;
+                  } while (current != NULL);                
+              }
+          }
+          free(ht.hashtable);
+          ht.hashtable = newHashtable;
+          ht.numsBuckets = newNumsBuckets;
+          ht.growthThreshold = newNumsBuckets * GROWTH;
+      }
+        
+      node *np = (node *)malloc(sizeof(*np));
+      if (np == NULL) {
+          printf("np is NULL!\n");
+          return NULL;
+      }
+    
+      np->key = i;
+      np->val = j;
+    
+      unsigned hashval = hash(i);
+    
+      printf("Installing {key: %d, val: %d} at hashtable[%d]\n", i, j, hashval&(ht.numsBuckets-1));
+
+      np->next = ht.hashtable[hashval&(ht.numsBuckets-1)];
+      ht.hashtable[hashval&(ht.numsBuckets-1)] = np;
+
+      printf("HASH TABLE: \n");
+      printHt(ht.hashtable, ht.numsBuckets);
+    
+      return np;
+  }
+
+  void printHt(node **hashtable, int size) {
+      for (int i = 0; i < size; i++) {
+          node *current = hashtable[i];
+          //printf("Bucket %i: ", hash(current->key)&(size-1));
+          if (current != NULL) {
+              printf("Bucket %i: ", i);
+              while (current != NULL) {
+                  printf("(%i, %i); ", current->key, current->val);
+                  current = current->next;
+              }	    
+              printf("\n");
+          } else {
+              //printf("NULL\n");
+          }
+      }
+  };
+
+  int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
+      htInitialize();
+        
+      node *np;
+      int complement;
+      for (int i = 0; i < numsSize; i++) {
+          complement = target - nums[i];
+          np = lookup(complement);
+          if (np != NULL) {
+              *returnSize = 2;
+              int *result = malloc(2 * sizeof(int));
+              result[0] = i;
+              result[1] = np->val;
+              return result;
+          }
+          install(nums[i], i);
+      }
+  
+      *returnSize = 0;
+      return NULL;
+  }
+
+  int main(void) {
+      int nums[] = {1, 2, 3, 13, 5, 6, 8, 9, 10, 11, 12, 4};
+      int returnSize = 0;
+      int *result = twoSum(nums, 13, 25, &returnSize);
+
+      for (int i = 0; i < returnSize; i++) {
+          printf("%i ", result[i]);
+      }
+      printf("\n");
+    
+      return 0;
+  }
+#+end_src

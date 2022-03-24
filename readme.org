@@ -1,14 +1,15 @@
 * itoa
 ** Write a function that takes an (unsigned) int and returns it as string.
-
 We can isolate the rightmost digit of the number, transform it into a
-character, and put it into a string. And do this till we have
-exhausted the number. Finally we will have to reverse the string.
+character, and put it into a string. And do so for each digit of the
+number. Finally we will have to reverse the string.
 
-How to isolate the rightmost digit? We can modulo ten 10.
+How to isolate one digit? We can isolate the rightmost digit of a
+numbr by doing modulo 10. E.g. 10 % 10 = 0 and 22 % 10 = 2.
 
-And then, how to get the other digits one by one? We can ``shift'' the
-number towards right using dividing it by 10.
+How to get the other digits? One option is get right of the digit we
+just processed. We can do so by dividing the number by 10. The number
+will be ``shifted'' towards right. 10 / 10 = 1, 22 / 10 = 2.
 
 #+begin_src C
   void itoa(uint32_t n, char s[])
@@ -22,9 +23,48 @@ number towards right using dividing it by 10.
       reverse(s);
   }
 #+end_src
-** TODO Would you write differently if you had to represent the number in Hex?
-Yeah... We can use & and shift... 4 binary digits can be represented
-by one hexadecimal digits...
+*** Would you write differently if you had to represent the number in Hex?
+If we have to represent the number in hexadecimal (or any other
+numeral system with a base that is a power of 2), then we could use
+bitwise operations, which are less costly than % (modulo) and /
+(division).
+
+Using & (bitwise AND) we can ``isolate'' the number of bits that would
+allow us to represent them by one digit of the numeral systems we are
+using (and put that digit into a string). For example, a hexadecimal
+digit represents four bits. After that, we can use >> (bitwise shift)
+to get rid of those bits we have translated.
+
+Assuming, for simplicity, that a number is represented by 8 bits), 34,
+say, is represented in binary by 00100010. Let's get the less
+signicant four bits that will represent a digit:
+#+begin_src C
+digit = number & 15;
+#+end_src C
+
+We can now transform value of digit into a char and put it into a
+string. Let's now shift the number towards right:
+#+begin_src C
+number >>= 4;
+#+end_src
+
+We can now translate again the 
+
+Let's write the reasoning into a function.
+#+begin_src C
+  void itoa(uint32_t n, char s[]) {
+      uint32_t digit, i;
+      i = 0;
+      while (n != 0) {
+          digit = n & 15;
+          s[i] = "0123456789ABCDEF"[digit];
+          n >>= 4;
+          i++;
+      }
+      s[i] = '\0';
+      reverse(s);
+  }
+#+end_src
 
 * Two Sum (Leet Code) | Solution(s) in C
 The problem:

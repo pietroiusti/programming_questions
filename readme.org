@@ -5,9 +5,9 @@ character, and put it into a string. And do so for each digit of the
 number. Finally we will have to reverse the string.
 
 How to isolate one digit? We can isolate the rightmost digit of a
-numbr by doing modulo 10. E.g. 10 % 10 = 0 and 22 % 10 = 2.
+number by doing modulo 10. E.g. 10 % 10 = 0 and 22 % 10 = 2.
 
-How to get the other digits? One option is get right of the digit we
+How to get the other digits? One option is get rid of the digit we
 just processed. We can do so by dividing the number by 10. The number
 will be ``shifted'' towards right. 10 / 10 = 1, 22 / 10 = 2.
 
@@ -15,10 +15,11 @@ will be ``shifted'' towards right. 10 / 10 = 1, 22 / 10 = 2.
   void itoa(uint32_t n, char s[])
   {
       uint32_t i = 0;    
-      do {
+      while (n != 0) {
           s[i] = n % 10 + '0';
+          n = n / 10;
           i++;
-      }  while (n = n / 10);
+      }
       s[i] = '\0';
       reverse(s);
   }
@@ -53,11 +54,10 @@ We can now translate again the
 Let's write the reasoning into a function.
 #+begin_src C
   void itoa(uint32_t n, char s[]) {
-      uint32_t digit, i;
+      uint32_t i;
       i = 0;
       while (n != 0) {
-          digit = n & 15;
-          s[i] = "0123456789ABCDEF"[digit];
+          s[i] = "0123456789ABCDEF"[n & 15];
           n >>= 4;
           i++;
       }

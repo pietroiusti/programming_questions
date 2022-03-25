@@ -12,6 +12,8 @@ just processed. We can do so by dividing the number by 10. The number
 will be ``shifted'' towards right. 10 / 10 = 1, 22 / 10 = 2.
 
 #+begin_src C
+  #include <stdio.h>
+  #include <stdint.h>
   void itoa(uint32_t n, char s[])
   {
       uint32_t i = 0;    
@@ -22,6 +24,23 @@ will be ``shifted'' towards right. 10 / 10 = 1, 22 / 10 = 2.
       }
       s[i] = '\0';
       reverse(s);
+  }
+#+end_src
+
+Here is one way to reverse:
+#+begin_src C
+  void reverse(char *s) {
+      uint32_t j;
+      for (j = 0; s[j] != '\0'; j++)
+          ;
+      j--; // get index of last char (the char before '\0')
+
+      char temp;
+      for (uint32_t i = 0; i < j; i++, j--) {
+          temp = s[i];
+          s[i] = s[j];
+          s[j] = temp;
+      }
   }
 #+end_src
 *** Would you write differently if you had to represent the number in Hex?

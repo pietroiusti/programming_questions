@@ -17,11 +17,11 @@ will be ``shifted'' towards right. 10 / 10 = 1, 22 / 10 = 2.
   void itoa(uint32_t n, char s[])
   {
       uint32_t i = 0;    
-      while (n != 0) {
+      do {
           s[i] = n % 10 + '0';
           n = n / 10;
           i++;
-      }
+      } while (n != 0);
       s[i] = '\0';
       reverse(s);
   }
@@ -75,11 +75,11 @@ Let's write the reasoning into a function.
   void itoa(uint32_t n, char s[]) {
       uint32_t i;
       i = 0;
-      while (n != 0) {
+      do {
           s[i] = "0123456789ABCDEF"[n & 15];
           n >>= 4;
           i++;
-      }
+      } while (n != 0);
       s[i] = '\0';
       reverse(s);
   }

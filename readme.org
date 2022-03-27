@@ -23,24 +23,18 @@ will be ``shifted'' towards right. 10 / 10 = 1, 22 / 10 = 2.
           i++;
       } while (n != 0);
       s[i] = '\0';
-      reverse(s);
+      reverse(s, i);
   }
-#+end_src
 
-Here is one way to reverse:
-#+begin_src C
-  void reverse(char *s) {
-      uint32_t j;
-      for (j = 0; s[j] != '\0'; j++)
-          ;
-      j--; // get index of last char (the char before '\0')
-
-      char temp;
-      for (uint32_t i = 0; i < j; i++, j--) {
+  // Reverse string s of length l
+  void reverse(char s[], int l) {
+      int temp, i;
+      l--;
+      for (i = 0; i < l; i++, l--) {
           temp = s[i];
-          s[i] = s[j];
-          s[j] = temp;
-      }
+          s[i] = s[l];
+          s[l] = temp;
+      }    
   }
 #+end_src
 *** Would you write differently if you had to represent the number in Hex?
